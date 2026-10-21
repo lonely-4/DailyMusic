@@ -1,6 +1,11 @@
 import { pickLyricLine } from './lyric';
 
 export const API_BASE = 'https://ncme-vc.vercel.app';
+
+export function apiBase(): string {
+  const fromEnv = typeof process !== 'undefined' ? process.env.DAILY_MUSIC_API : undefined;
+  return (fromEnv || API_BASE).replace(/\/$/, '');
+}
 export const DEFAULT_SONG_ID = 1423990087;
 
 export type Track = {
@@ -71,6 +76,11 @@ export function parseShare(input: string): { id?: number; shortUrl?: string; key
 }
 
 export async function resolveShortLink(shortUrl: string): Promise<number | null> {
+  if (typeof window === 'undefined') {
+    const response = await fetch(shortUrl, { redirect: 'manual' });
+    const id = response.headers.get('location')?.match(/[?&]id=(\d{4,})/)?.[1];
+    return id ? Number(id) : null;
+  }
   const endpoint = new URL('/api/resolve', window.location.origin);
   endpoint.searchParams.set('url', shortUrl);
   const response = await fetch(endpoint);
@@ -98,8 +108,8 @@ function toTrack(song: SongJson, line: string): Track {
 
 export async function fetchTrack(id: number): Promise<Track> {
   const [detailResponse, lyricResponse] = await Promise.all([
-    fetch(`${API_BASE}/song/detail?ids=${id}`),
-    fetch(`${API_BASE}/lyric?id=${id}`),
+    fetch(`${apiBase()}/song/detail?ids=${id}`),
+    fetch(`${apiBase()}/lyric?id=${id}`),
   ]);
   if (!detailResponse.ok) throw new Error('曲库没有响应');
   const detail = (await detailResponse.json()) as { songs?: SongJson[] };
@@ -119,7 +129,7 @@ export async function fetchTrack(id: number): Promise<Track> {
 }
 
 export async function searchTracks(keyword: string): Promise<SearchHit[]> {
-  const endpoint = new URL(`${API_BASE}/cloudsearch`);
+  const endpoint = new URL(`${apiBase()}/cloudsearch`);
   endpoint.searchParams.set('keywords', keyword);
   endpoint.searchParams.set('type', '1');
   endpoint.searchParams.set('limit', '6');

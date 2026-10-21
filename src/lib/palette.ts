@@ -1,4 +1,5 @@
 import { rgbToHex, rgbToOklch, type Oklch } from './color';
+import { createSurface } from './surface';
 
 export type Swatch = Oklch & {
   hex: string;
@@ -17,18 +18,22 @@ export type Palette = {
 };
 
 function sourceSize(source: CanvasImageSource): { width: number; height: number } {
-  if (source instanceof HTMLImageElement) return { width: source.naturalWidth, height: source.naturalHeight };
-  if (source instanceof HTMLVideoElement) return { width: source.videoWidth, height: source.videoHeight };
-  if (source instanceof SVGImageElement) return { width: 800, height: 800 };
-  if ('width' in source && 'height' in source) return { width: source.width, height: source.height };
+  if (typeof HTMLImageElement !== 'undefined' && source instanceof HTMLImageElement) {
+    return { width: source.naturalWidth, height: source.naturalHeight };
+  }
+  if (typeof HTMLVideoElement !== 'undefined' && source instanceof HTMLVideoElement) {
+    return { width: source.videoWidth, height: source.videoHeight };
+  }
+  if (typeof SVGImageElement !== 'undefined' && source instanceof SVGImageElement) return { width: 800, height: 800 };
+  if ('width' in source && 'height' in source && typeof source.width === 'number' && typeof source.height === 'number') {
+    return { width: source.width, height: source.height };
+  }
   return { width: 800, height: 800 };
 }
 
 export function extractPalette(source: CanvasImageSource, count = 5): Palette {
   const sample = 96;
-  const canvas = document.createElement('canvas');
-  canvas.width = sample;
-  canvas.height = sample;
+  const canvas = createSurface(sample, sample);
   const context = canvas.getContext('2d', { willReadFrequently: true });
   if (!context) {
     return { swatches: [], meanL: 0.5, brightRatio: 0, highKey: false, edge: '#F4F4F4' };

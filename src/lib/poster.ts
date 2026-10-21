@@ -1,6 +1,7 @@
 import { mdiPlayCircle, mdiSkipNext, mdiSkipPrevious } from '@mdi/js';
 import { hexToOklch, hueDistance, mixHex, tonalPalette, withAlpha, type TonalPalette } from './color';
 import type { Swatch } from './palette';
+import { createSurface } from './surface';
 
 export type Template = 'immersive' | 'player' | 'editorial' | 'film' | 'lyric';
 
@@ -45,10 +46,16 @@ type Ink = {
 let noiseTile: HTMLCanvasElement | null = null;
 
 function sourceSize(source: CanvasImageSource): { width: number; height: number } {
-  if (source instanceof HTMLImageElement) return { width: source.naturalWidth, height: source.naturalHeight };
-  if (source instanceof HTMLVideoElement) return { width: source.videoWidth, height: source.videoHeight };
-  if (source instanceof SVGImageElement) return { width: 800, height: 800 };
-  if ('width' in source && 'height' in source) return { width: source.width, height: source.height };
+  if (typeof HTMLImageElement !== 'undefined' && source instanceof HTMLImageElement) {
+    return { width: source.naturalWidth, height: source.naturalHeight };
+  }
+  if (typeof HTMLVideoElement !== 'undefined' && source instanceof HTMLVideoElement) {
+    return { width: source.videoWidth, height: source.videoHeight };
+  }
+  if (typeof SVGImageElement !== 'undefined' && source instanceof SVGImageElement) return { width: 800, height: 800 };
+  if ('width' in source && 'height' in source && typeof source.width === 'number' && typeof source.height === 'number') {
+    return { width: source.width, height: source.height };
+  }
   return { width: 800, height: 800 };
 }
 
@@ -121,7 +128,7 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
 function grain(ctx: CanvasRenderingContext2D, w: number, h: number, amount: number, light: boolean) {
   if (amount <= 0.01) return;
   if (!noiseTile) {
-    noiseTile = document.createElement('canvas');
+    noiseTile = createSurface(160, 160);
     noiseTile.width = 160;
     noiseTile.height = 160;
     const nctx = noiseTile.getContext('2d');
