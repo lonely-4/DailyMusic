@@ -12,7 +12,7 @@ import {
   type Track,
 } from './lib/netease';
 import { extractPalette, type Swatch } from './lib/palette';
-import { RATIOS, posterDate, renderPoster, type RatioId, type Template } from './lib/poster';
+import { RATIOS, THEMES, posterDate, renderPoster, type RatioId, type Template } from './lib/poster';
 
 type Tone = 'light' | 'dark';
 
@@ -24,14 +24,6 @@ type Loaded = {
   edge: string;
   coverUrl: string;
 };
-
-const TEMPLATES: { id: Template; label: string }[] = [
-  { id: 'immersive', label: '沉浸' },
-  { id: 'player', label: '歌单' },
-  { id: 'editorial', label: '刊头' },
-  { id: 'film', label: '胶片' },
-  { id: 'lyric', label: '独白' },
-];
 
 function todayInput(): string {
   return new Intl.DateTimeFormat('en-CA', {
@@ -408,9 +400,9 @@ export function App() {
           </section>
 
           <section className="card">
-            <h2>版式</h2>
-            <div className="segmented" role="radiogroup" aria-label="海报版式">
-              {TEMPLATES.map((item) => (
+            <h2>主题</h2>
+            <div className="segmented" role="radiogroup" aria-label="海报主题">
+              {THEMES.map((item) => (
                 <button
                   key={item.id}
                   type="button"
@@ -418,7 +410,7 @@ export function App() {
                   aria-checked={template === item.id}
                   onClick={() => {
                     setTemplate(item.id);
-                    if (item.id === 'player') setRatio('wide');
+                    setRatio(item.ratio);
                   }}
                 >
                   {item.label}

@@ -8,7 +8,7 @@ import { createCanvas, GlobalFonts, loadImage, Path2D } from '@napi-rs/canvas';
 import { seedFromSwatch } from './lib/color';
 import { fetchTrack, parseShare, resolveShortLink, searchTracks, type Track } from './lib/netease';
 import { extractPalette } from './lib/palette';
-import { RATIOS, posterDate, renderPoster, type RatioId, type Template } from './lib/poster';
+import { RATIOS, posterDate, renderPoster, resolveTheme, THEMES, type RatioId } from './lib/poster';
 
 globalThis.Path2D = Path2D as unknown as typeof globalThis.Path2D;
 (globalThis as { __dailyCanvas?: (width: number, height: number) => HTMLCanvasElement }).__dailyCanvas = (width, height) => {
@@ -17,19 +17,6 @@ globalThis.Path2D = Path2D as unknown as typeof globalThis.Path2D;
   canvas.height = height;
   return canvas as unknown as HTMLCanvasElement;
 };
-
-const TEMPLATES = new Map<string, Template>([
-  ['immersive', 'immersive'],
-  ['沉浸', 'immersive'],
-  ['player', 'player'],
-  ['歌单', 'player'],
-  ['editorial', 'editorial'],
-  ['刊头', 'editorial'],
-  ['film', 'film'],
-  ['胶片', 'film'],
-  ['lyric', 'lyric'],
-  ['独白', 'lyric'],
-]);
 
 const RATIO_IDS = new Map<string, RatioId>([
   ['4:5', 'poster'],
@@ -50,7 +37,8 @@ const HELP = `日推海报
 
 选项
   -o, --out <文件>        输出 PNG，默认用歌名和艺人命名
-  -t, --template <版式>   沉浸 immersive | 歌单 player | 刊头 editorial | 胶片 film | 独白 lyric
+      --theme <主题>      ${THEMES.map((theme) => theme.label).join(' | ')}
+  -t, --template <主题>   同 --theme。歌单即《心予報》卡片，也可写 心予報
   -r, --ratio <画幅>      4:5 | 9:16 | 1:1 | 16:9
       --tone <light|dark> 浅底或深底，默认按封面明暗决定
   -n, --note <文字>       海报上的一句旁白
@@ -59,7 +47,7 @@ const HELP = `日推海报
 
 示例
   daily-music "https://163cn.tv/bi94lQEJ"
-  daily-music "https://y.music.163.com/m/song?id=1423990087" -t 歌单 -o 心予報.png
+  daily-music "https://163cn.tv/bjb2T4Lv" --theme 心予報
 `;
 
 function registerFonts() {
@@ -133,6 +121,7 @@ async function main() {
     allowPositionals: true,
     options: {
       out: { type: 'string', short: 'o' },
+      theme: { type: 'string' },
       template: { type: 'string', short: 't' },
       ratio: { type: 'string', short: 'r' },
       tone: { type: 'string' },
@@ -150,9 +139,11 @@ async function main() {
   const text = await readInput(positionals);
   if (!text) throw new Error('没有收到链接');
 
-  const template = values.template ? TEMPLATES.get(values.template) : 'immersive';
-  if (!template) throw new Error(`未知版式「${values.template}」。可用：沉浸、歌单、刊头、胶片、独白`);
-  const ratio = values.ratio ? RATIO_IDS.get(values.ratio) : template === 'player' ? 'wide' : 'poster';
+  const themeName = values.theme ?? values.template;
+  const theme = themeName ? resolveTheme(themeName) : resolveTheme('沉浸');
+  if (!theme) throw new Error(`未知主题「${themeName}」。可用：${THEMES.map((item) => item.label).join('、')}`);
+  const template = theme.id;
+  const ratio = values.ratio ? RATIO_IDS.get(values.ratio) : theme.ratio;
   if (!ratio) throw new Error(`未知画幅「${values.ratio}」。可用：4:5、9:16、1:1、16:9`);
   if (values.tone && values.tone !== 'light' && values.tone !== 'dark') {
     throw new Error('--tone 只能是 light 或 dark');

@@ -773,6 +773,28 @@ export const RATIOS = {
 
 export type RatioId = keyof typeof RATIOS;
 
+export type Theme = {
+  id: Template;
+  label: string;
+  ratio: RatioId;
+  aliases: string[];
+};
+
+export const THEMES: Theme[] = [
+  { id: 'immersive', label: '沉浸', ratio: 'poster', aliases: ['沉浸', 'immersive', 'material', 'md3'] },
+  { id: 'player', label: '歌单', ratio: 'wide', aliases: ['歌单', 'player', '心予報', '心予报', 'kokoro'] },
+  { id: 'editorial', label: '刊头', ratio: 'poster', aliases: ['刊头', 'editorial'] },
+  { id: 'film', label: '胶片', ratio: 'poster', aliases: ['胶片', 'film'] },
+  { id: 'lyric', label: '独白', ratio: 'poster', aliases: ['独白', 'lyric'] },
+];
+
+export function resolveTheme(name: string): Theme | undefined {
+  const key = name.trim().toLowerCase();
+  return THEMES.find(
+    (theme) => theme.id === key || theme.label === name.trim() || theme.aliases.some((alias) => alias.toLowerCase() === key),
+  );
+}
+
 export function posterDate(date: Date): { dateLabel: string; serial: string } {
   const iso = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Shanghai',

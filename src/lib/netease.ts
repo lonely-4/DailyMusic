@@ -38,7 +38,7 @@ type SongJson = {
   dt?: number;
   publishTime?: number;
   ar?: { name: string }[];
-  al?: { name?: string; picUrl?: string };
+  al?: { id?: number; name?: string; picUrl?: string };
 };
 
 export function formatDuration(ms: number): string {
@@ -90,7 +90,15 @@ export async function resolveShortLink(shortUrl: string): Promise<number | null>
   return id ? Number(id) : null;
 }
 
-function toTrack(song: SongJson, line: string): Track {
+async function albumPublished(id?: number): Promise<number | undefined> {
+  if (!id) return undefined;
+  const response = await fetch(`${apiBase()}/album?id=${id}`);
+  if (!response.ok) return undefined;
+  const data = (await response.json()) as { album?: { publishTime?: number } };
+  return data.album?.publishTime || undefined;
+}
+
+function toTrack(song: SongJson, line: string, published?: number): Track {
   return {
     id: song.id,
     name: song.name,
@@ -100,8 +108,8 @@ function toTrack(song: SongJson, line: string): Track {
     album: song.al?.name ?? '',
     coverUrl: song.al?.picUrl ?? '',
     duration: formatDuration(song.dt ?? 0),
-    year: formatYear(song.publishTime),
-    released: formatRelease(song.publishTime),
+    year: formatYear(published),
+    released: formatRelease(published),
     line,
   };
 }
@@ -115,6 +123,7 @@ export async function fetchTrack(id: number): Promise<Track> {
   const detail = (await detailResponse.json()) as { songs?: SongJson[] };
   const song = detail.songs?.[0];
   if (!song) throw new Error('没有找到这首歌');
+  const published = song.publishTime || (await albumPublished(song.al?.id));
 
   let line = '';
   if (lyricResponse.ok) {
@@ -125,7 +134,7 @@ export async function fetchTrack(id: number): Promise<Track> {
     const title = [song.name, song.tns?.[0] ?? ''].filter(Boolean).join(' ');
     line = pickLyricLine(lyric.tlyric?.lyric ?? '', lyric.lrc?.lyric ?? '', title);
   }
-  return toTrack(song, line);
+  return toTrack(song, line, published);
 }
 
 export async function searchTracks(keyword: string): Promise<SearchHit[]> {
