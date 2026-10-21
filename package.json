@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@fontsource/roboto": "^5.2.8",
+    "@mdi/js": "^7.4.47",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

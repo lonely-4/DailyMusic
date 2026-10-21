@@ -1,3 +1,4 @@
+import { mdiPlayCircle, mdiSkipNext, mdiSkipPrevious } from '@mdi/js';
 import { hexToOklch, hueDistance, mixHex, tonalPalette, withAlpha, type TonalPalette } from './color';
 import type { Swatch } from './palette';
 
@@ -686,7 +687,6 @@ function drawPlayer(ctx: CanvasRenderingContext2D, input: PosterInput) {
   roundRect(ctx, coverX, coverY, cover, cover, radius);
   ctx.stroke();
   ctx.restore();
-  drawInkBrush(ctx, w, h);
 
   const textLeft = landscape ? coverX + cover + margin : margin;
   const textRight = w - (landscape ? Math.round(w * 0.07) : margin);
@@ -741,86 +741,20 @@ function drawPlayer(ctx: CanvasRenderingContext2D, input: PosterInput) {
   ctx.textAlign = 'left';
 }
 
-function drawTransport(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  size: number,
-  color: string,
-) {
+function drawMdiIcon(ctx: CanvasRenderingContext2D, path: string, x: number, y: number, size: number, color: string) {
   ctx.save();
-  ctx.strokeStyle = color;
+  ctx.translate(x - size / 2, y - size / 2);
+  ctx.scale(size / 24, size / 24);
   ctx.fillStyle = color;
-  ctx.lineWidth = Math.max(2.5, size * 0.045);
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  const gap = size * 1.35;
-  drawSkip(ctx, cx - gap, cy, size * 0.34, -1);
-  ctx.beginPath();
-  ctx.arc(cx, cy, size * 0.48, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(28,22,18,0.88)';
-  const tri = size * 0.2;
-  ctx.beginPath();
-  ctx.moveTo(cx - tri * 0.28, cy - tri);
-  ctx.lineTo(cx - tri * 0.28, cy + tri);
-  ctx.lineTo(cx + tri * 0.95, cy);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = color;
-  drawSkip(ctx, cx + gap, cy, size * 0.34, 1);
+  ctx.fill(new Path2D(path), 'evenodd');
   ctx.restore();
 }
 
-function drawSkip(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, direction: number) {
-  const bar = x + direction * size * 0.95;
-  ctx.beginPath();
-  ctx.moveTo(bar, y - size);
-  ctx.lineTo(bar, y + size);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x - direction * size * 0.35, y - size * 0.92);
-  ctx.lineTo(x - direction * size * 0.35, y + size * 0.92);
-  ctx.lineTo(x + direction * size * 0.72, y);
-  ctx.closePath();
-  ctx.fill();
-}
-
-function brushEdge(steps: number, length: number, amp: number, phase: number, sign: number): Array<[number, number]> {
-  const points: Array<[number, number]> = [];
-  for (let i = 0; i <= steps; i += 1) {
-    const t = i / steps;
-    const body = 0.42 + 0.58 * Math.sin(Math.PI * t) ** 0.3;
-    const jag = Math.sin(t * 28 + phase) * 0.16 + Math.sin(t * 13 + phase * 2) * 0.1;
-    points.push([t * length, sign * amp * body * (1 + jag)]);
-  }
-  return points;
-}
-
-function drawInkBrush(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  const paint = (x: number, y: number, length: number, amp: number, tilt: number, phase: number) => {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(tilt);
-    ctx.beginPath();
-    const top = brushEdge(72, length, amp, phase, -1);
-    const bottom = brushEdge(72, length, amp * 0.72, phase + 1.4, 1);
-    top.forEach(([px, py], index) => (index === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py)));
-    for (let i = bottom.length - 1; i >= 0; i -= 1) {
-      const point = bottom[i];
-      if (point) ctx.lineTo(point[0], point[1]);
-    }
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  };
-
-  ctx.save();
-  ctx.fillStyle = '#1A1614';
-  paint(w * 0.6, h * 0.9, w * 0.46, h * 0.055, -0.1, 0.6);
-  ctx.globalAlpha = 0.9;
-  paint(w * 0.7, h * 0.97, w * 0.34, h * 0.028, -0.04, 2.1);
-  ctx.restore();
+function drawTransport(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number, color: string) {
+  const gap = size * 1.15;
+  drawMdiIcon(ctx, mdiSkipPrevious, cx - gap, cy, size * 0.62, color);
+  drawMdiIcon(ctx, mdiPlayCircle, cx, cy, size, color);
+  drawMdiIcon(ctx, mdiSkipNext, cx + gap, cy, size * 0.62, color);
 }
 
 export const RATIOS = {
