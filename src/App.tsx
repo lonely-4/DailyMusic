@@ -27,6 +27,7 @@ type Loaded = {
 
 const TEMPLATES: { id: Template; label: string }[] = [
   { id: 'immersive', label: '沉浸' },
+  { id: 'player', label: '歌单' },
   { id: 'editorial', label: '刊头' },
   { id: 'film', label: '胶片' },
   { id: 'lyric', label: '独白' },
@@ -126,6 +127,7 @@ export function App() {
         album: loaded.track.album,
         duration: loaded.track.duration,
         year: loaded.track.year,
+        released: loaded.track.released,
         note,
         dateLabel: stamp.dateLabel,
         serial: stamp.serial,
@@ -414,7 +416,10 @@ export function App() {
                   type="button"
                   role="radio"
                   aria-checked={template === item.id}
-                  onClick={() => setTemplate(item.id)}
+                  onClick={() => {
+                    setTemplate(item.id);
+                    if (item.id === 'player') setRatio('wide');
+                  }}
                 >
                   {item.label}
                 </button>

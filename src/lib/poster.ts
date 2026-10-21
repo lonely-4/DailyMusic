@@ -1,7 +1,7 @@
 import { hexToOklch, hueDistance, mixHex, tonalPalette, withAlpha, type TonalPalette } from './color';
 import type { Swatch } from './palette';
 
-export type Template = 'immersive' | 'editorial' | 'film' | 'lyric';
+export type Template = 'immersive' | 'player' | 'editorial' | 'film' | 'lyric';
 
 export type PosterInput = {
   image: CanvasImageSource;
@@ -22,6 +22,7 @@ export type PosterInput = {
   album: string;
   duration: string;
   year: string;
+  released: string;
   note: string;
   dateLabel: string;
   serial: string;
@@ -280,12 +281,13 @@ export function renderPoster(canvas: HTMLCanvasElement, input: PosterInput) {
   const ink = buildInk(input);
   ctx.clearRect(0, 0, input.width, input.height);
 
-  if (input.template === 'editorial') drawEditorial(ctx, input, ink);
+  if (input.template === 'player') drawPlayer(ctx, input);
+  else if (input.template === 'editorial') drawEditorial(ctx, input, ink);
   else if (input.template === 'film') drawFilm(ctx, input, ink);
   else if (input.template === 'lyric') drawLyric(ctx, input, ink);
   else drawImmersive(ctx, input, ink);
 
-  grain(ctx, input.width, input.height, input.grain, input.tone === 'light');
+  if (input.template !== 'player') grain(ctx, input.width, input.height, input.grain, input.tone === 'light');
 }
 
 function drawImmersive(ctx: CanvasRenderingContext2D, input: PosterInput, ink: Ink) {
@@ -618,10 +620,214 @@ function drawLyric(ctx: CanvasRenderingContext2D, input: PosterInput, ink: Ink) 
   ctx.textAlign = 'left';
 }
 
+function drawPlayer(ctx: CanvasRenderingContext2D, input: PosterInput) {
+  const { width: w, height: h, image } = input;
+  const cream = '#F4EFE4';
+  const blur = Math.max(32, input.blur + 26);
+  ctx.save();
+  ctx.filter = `blur(${blur}px) saturate(1.45) brightness(0.78)`;
+  drawCover(ctx, image, -blur * 2, -blur * 2, w + blur * 4, h + blur * 4);
+  ctx.filter = 'none';
+  ctx.restore();
+  ctx.fillStyle = withAlpha('#12100E', 0.16 + input.darkness * 0.22);
+  ctx.fillRect(0, 0, w, h);
+  const glow = ctx.createRadialGradient(w * 0.72, h * 0.48, w * 0.02, w * 0.7, h * 0.5, w * 0.46);
+  glow.addColorStop(0, withAlpha(input.seed, 0.28));
+  glow.addColorStop(1, withAlpha(input.seed, 0));
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, w, h);
+
+  const landscape = w / h >= 1.15;
+  const margin = Math.round(Math.min(w, h) * 0.075);
+  const coverMax = landscape ? Math.min(h - margin * 2, w * 0.4) : Math.min(w - margin * 2, h * 0.46);
+  const cover = Math.round(coverMax);
+  const coverX = landscape ? Math.round(w * 0.065) : Math.round((w - cover) / 2);
+  const coverY = landscape ? Math.round((h - cover) / 2) : margin;
+  const radius = Math.max(18, cover * 0.04);
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.38)';
+  ctx.shadowBlur = Math.round(cover * 0.06);
+  ctx.shadowOffsetY = Math.round(cover * 0.025);
+  roundRect(ctx, coverX, coverY, cover, cover, radius);
+  ctx.fillStyle = '#111';
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  roundRect(ctx, coverX, coverY, cover, cover, radius);
+  ctx.clip();
+  drawCover(ctx, image, coverX, coverY, cover, cover);
+  const shade = ctx.createLinearGradient(0, coverY + cover * 0.58, 0, coverY + cover);
+  shade.addColorStop(0, 'rgba(0,0,0,0)');
+  shade.addColorStop(1, 'rgba(0,0,0,0.62)');
+  ctx.fillStyle = shade;
+  ctx.fillRect(coverX, coverY + cover * 0.5, cover, cover * 0.5);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(255,255,255,0.94)';
+  ctx.shadowColor = 'rgba(0,0,0,0.45)';
+  ctx.shadowBlur = 10;
+  const album = `专辑<${input.album || input.title}>`;
+  let albumSize = Math.round(cover * 0.04);
+  ctx.font = `500 ${albumSize}px ${SANS}`;
+  while (albumSize > 14 && ctx.measureText(album).width > cover * 0.84) {
+    albumSize -= 1;
+    ctx.font = `500 ${albumSize}px ${SANS}`;
+  }
+  ctx.fillText(album, coverX + cover / 2, coverY + cover * 0.855);
+  ctx.font = `400 ${Math.round(albumSize * 0.92)}px ${SANS}`;
+  ctx.fillText(input.released || input.year, coverX + cover / 2, coverY + cover * 0.915);
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, coverX, coverY, cover, cover, radius);
+  ctx.stroke();
+  ctx.restore();
+  drawInkBrush(ctx, w, h);
+
+  const textLeft = landscape ? coverX + cover + margin : margin;
+  const textRight = w - (landscape ? Math.round(w * 0.07) : margin);
+  const textWidth = Math.max(120, textRight - textLeft);
+  const textCenter = textLeft + textWidth / 2;
+  const blockTop = landscape ? 0 : coverY + cover + margin * 0.7;
+  const blockHeight = landscape ? h : h - blockTop - margin;
+
+  let titleSize = Math.round(Math.min(h, w) * (landscape ? 0.112 : 0.078));
+  ctx.font = `700 ${titleSize}px ${SANS}`;
+  while (titleSize > 28 && ctx.measureText(input.title).width > textWidth) {
+    titleSize -= 2;
+    ctx.font = `700 ${titleSize}px ${SANS}`;
+  }
+  const kickerSize = Math.max(16, Math.round(titleSize * 0.34));
+  const artistSize = Math.max(16, Math.round(titleSize * 0.36));
+  const kicker = '『日推歌单』';
+  const artist = `『${input.artist || '未知艺人'}』`;
+  const gap = Math.round(titleSize * 0.38);
+  const control = Math.round(titleSize * 0.72);
+  const block =
+    kickerSize + gap * 0.7 + titleSize + gap * 0.65 + artistSize + gap + control;
+  let y = blockTop + Math.max(margin * 0.4, (blockHeight - block) / 2);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = cream;
+  ctx.font = `500 ${kickerSize}px ${SANS}`;
+  ctx.letterSpacing = '2px';
+  ctx.fillText(kicker, textCenter, y);
+  ctx.letterSpacing = '0px';
+  y += kickerSize + gap * 0.7;
+
+  ctx.font = `700 ${titleSize}px ${SANS}`;
+  ctx.fillStyle = cream;
+  const titleLines = wrapText(ctx, input.title, textWidth).slice(0, 2);
+  for (const line of titleLines) {
+    ctx.fillText(line, textCenter, y);
+    y += titleSize * 1.15;
+  }
+  y += gap * 0.2;
+  ctx.font = `500 ${artistSize}px ${SANS}`;
+  ctx.fillStyle = withAlpha(cream, 0.92);
+  let artistDraw = artist;
+  if (ctx.measureText(artistDraw).width > textWidth) {
+    ctx.font = `500 ${Math.max(14, artistSize - 6)}px ${SANS}`;
+    artistDraw = wrapText(ctx, artist, textWidth)[0] ?? artist;
+  }
+  ctx.fillText(artistDraw, textCenter, y);
+  y += artistSize + gap;
+  drawTransport(ctx, textCenter, y + control * 0.45, control, cream);
+  ctx.textAlign = 'left';
+}
+
+function drawTransport(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  size: number,
+  color: string,
+) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = Math.max(2.5, size * 0.045);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  const gap = size * 1.35;
+  drawSkip(ctx, cx - gap, cy, size * 0.34, -1);
+  ctx.beginPath();
+  ctx.arc(cx, cy, size * 0.48, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(28,22,18,0.88)';
+  const tri = size * 0.2;
+  ctx.beginPath();
+  ctx.moveTo(cx - tri * 0.28, cy - tri);
+  ctx.lineTo(cx - tri * 0.28, cy + tri);
+  ctx.lineTo(cx + tri * 0.95, cy);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = color;
+  drawSkip(ctx, cx + gap, cy, size * 0.34, 1);
+  ctx.restore();
+}
+
+function drawSkip(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, direction: number) {
+  const bar = x + direction * size * 0.95;
+  ctx.beginPath();
+  ctx.moveTo(bar, y - size);
+  ctx.lineTo(bar, y + size);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x - direction * size * 0.35, y - size * 0.92);
+  ctx.lineTo(x - direction * size * 0.35, y + size * 0.92);
+  ctx.lineTo(x + direction * size * 0.72, y);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function brushEdge(steps: number, length: number, amp: number, phase: number, sign: number): Array<[number, number]> {
+  const points: Array<[number, number]> = [];
+  for (let i = 0; i <= steps; i += 1) {
+    const t = i / steps;
+    const body = 0.42 + 0.58 * Math.sin(Math.PI * t) ** 0.3;
+    const jag = Math.sin(t * 28 + phase) * 0.16 + Math.sin(t * 13 + phase * 2) * 0.1;
+    points.push([t * length, sign * amp * body * (1 + jag)]);
+  }
+  return points;
+}
+
+function drawInkBrush(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  const paint = (x: number, y: number, length: number, amp: number, tilt: number, phase: number) => {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(tilt);
+    ctx.beginPath();
+    const top = brushEdge(72, length, amp, phase, -1);
+    const bottom = brushEdge(72, length, amp * 0.72, phase + 1.4, 1);
+    top.forEach(([px, py], index) => (index === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py)));
+    for (let i = bottom.length - 1; i >= 0; i -= 1) {
+      const point = bottom[i];
+      if (point) ctx.lineTo(point[0], point[1]);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  };
+
+  ctx.save();
+  ctx.fillStyle = '#1A1614';
+  paint(w * 0.6, h * 0.9, w * 0.46, h * 0.055, -0.1, 0.6);
+  ctx.globalAlpha = 0.9;
+  paint(w * 0.7, h * 0.97, w * 0.34, h * 0.028, -0.04, 2.1);
+  ctx.restore();
+}
+
 export const RATIOS = {
   poster: { width: 1080, height: 1350, label: '4:5' },
   story: { width: 1080, height: 1920, label: '9:16' },
   square: { width: 1080, height: 1080, label: '1:1' },
+  wide: { width: 1920, height: 1080, label: '16:9' },
 } as const;
 
 export type RatioId = keyof typeof RATIOS;

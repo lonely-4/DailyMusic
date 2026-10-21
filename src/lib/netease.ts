@@ -13,6 +13,7 @@ export type Track = {
   coverUrl: string;
   duration: string;
   year: string;
+  released: string;
   line: string;
 };
 
@@ -47,6 +48,17 @@ export function formatYear(timestamp?: number): string {
   return new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric' }).format(new Date(timestamp));
 }
 
+export function formatRelease(timestamp?: number): string {
+  if (!timestamp) return '';
+  const iso = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(timestamp));
+  return iso.replaceAll('-', '.');
+}
+
 export function parseShare(input: string): { id?: number; shortUrl?: string; keyword?: string } {
   const trimmed = input.trim();
   const idMatch = trimmed.match(/(?:id=|\/song\/)(\d{4,})/);
@@ -79,6 +91,7 @@ function toTrack(song: SongJson, line: string): Track {
     coverUrl: song.al?.picUrl ?? '',
     duration: formatDuration(song.dt ?? 0),
     year: formatYear(song.publishTime),
+    released: formatRelease(song.publishTime),
     line,
   };
 }
