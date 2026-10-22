@@ -76,9 +76,16 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 }
 
 function titleParts(title: string): { main: string; extra: string } {
-  const match = title.trim().match(/^([\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}].*?)[ \u3000]+([A-Za-z].*)$/u);
-  if (!match) return { main: title.trim(), extra: '' };
-  return { main: match[1].trim(), extra: match[2].trim() };
+  const trimmed = title.trim();
+  const paren = trimmed.match(/^(.*?)\s*[（(]([^）)]+)[）)]\s*$/);
+  let main = (paren ? paren[1] : trimmed).trim();
+  let extra = paren ? paren[2].trim() : '';
+  const bilingual = main.match(/^([\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}].*?)[ \u3000]+([A-Za-z].*)$/u);
+  if (bilingual) {
+    main = bilingual[1].trim();
+    extra = [bilingual[2].trim(), extra].filter(Boolean).join('  ');
+  }
+  return { main: main || trimmed, extra };
 }
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
