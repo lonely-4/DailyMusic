@@ -75,6 +75,12 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
+function titleParts(title: string): { main: string; extra: string } {
+  const match = title.trim().match(/^([\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}].*?)[ \u3000]+([A-Za-z].*)$/u);
+  if (!match) return { main: title.trim(), extra: '' };
+  return { main: match[1].trim(), extra: match[2].trim() };
+}
+
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const lines: string[] = [];
   let current = '';
@@ -179,20 +185,37 @@ function drawPlayer(ctx: CanvasRenderingContext2D, input: PosterInput) {
   const blockTop = landscape ? 0 : coverY + cover + margin * 0.7;
   const blockHeight = landscape ? h : h - blockTop - margin;
 
-  let titleSize = Math.round(Math.min(h, w) * (landscape ? 0.112 : 0.078));
+  const hero = Math.round(Math.min(h, w) * (landscape ? 0.112 : 0.078));
+  const control = Math.round(hero * 0.72);
+  const kickerSize = Math.max(18, Math.round(hero * 0.34));
+  const artistSize = Math.max(18, Math.round(hero * 0.36));
+  const gap = Math.round(hero * 0.38);
+  const kicker = '『日推歌单』';
+  const artist = `『${input.artist || '未知艺人'}』`;
+  const parts = titleParts(input.title);
+  let titleSize = hero;
   ctx.font = `700 ${titleSize}px ${SANS}`;
-  while (titleSize > 28 && ctx.measureText(input.title).width > textWidth) {
+  const titleFloor = Math.round(hero * 0.56);
+  while (titleSize > titleFloor && ctx.measureText(parts.main).width > textWidth) {
     titleSize -= 2;
     ctx.font = `700 ${titleSize}px ${SANS}`;
   }
-  const kickerSize = Math.max(16, Math.round(titleSize * 0.34));
-  const artistSize = Math.max(16, Math.round(titleSize * 0.36));
-  const kicker = '『日推歌单』';
-  const artist = `『${input.artist || '未知艺人'}』`;
-  const gap = Math.round(titleSize * 0.38);
-  const control = Math.round(titleSize * 0.72);
-  const block =
-    kickerSize + gap * 0.7 + titleSize + gap * 0.65 + artistSize + gap + control;
+  const titleLines = wrapText(ctx, parts.main, textWidth).slice(0, 2);
+  let extraSize = 0;
+  let extraLines: string[] = [];
+  if (parts.extra) {
+    extraSize = Math.max(22, Math.round(titleSize * 0.42));
+    ctx.font = `500 ${extraSize}px ${SANS}`;
+    while (extraSize > 18 && ctx.measureText(parts.extra).width > textWidth) {
+      extraSize -= 1;
+      ctx.font = `500 ${extraSize}px ${SANS}`;
+    }
+    extraLines = wrapText(ctx, parts.extra, textWidth).slice(0, 2);
+  }
+  const titleBlock =
+    titleLines.length * titleSize * 1.12 +
+    (extraLines.length ? gap * 0.35 + extraLines.length * extraSize * 1.25 : 0);
+  const block = kickerSize + gap * 0.7 + titleBlock + gap * 0.55 + artistSize + gap + control;
   let y = blockTop + Math.max(margin * 0.4, (blockHeight - block) / 2);
 
   ctx.textAlign = 'center';
@@ -206,12 +229,20 @@ function drawPlayer(ctx: CanvasRenderingContext2D, input: PosterInput) {
 
   ctx.font = `700 ${titleSize}px ${SANS}`;
   ctx.fillStyle = cream;
-  const titleLines = wrapText(ctx, input.title, textWidth).slice(0, 2);
   for (const line of titleLines) {
     ctx.fillText(line, textCenter, y);
-    y += titleSize * 1.15;
+    y += titleSize * 1.12;
   }
-  y += gap * 0.2;
+  if (extraLines.length) {
+    y += gap * 0.15;
+    ctx.font = `500 ${extraSize}px ${SANS}`;
+    ctx.fillStyle = withAlpha(cream, 0.88);
+    for (const line of extraLines) {
+      ctx.fillText(line, textCenter, y);
+      y += extraSize * 1.25;
+    }
+  }
+  y += gap * 0.15;
   ctx.font = `500 ${artistSize}px ${SANS}`;
   ctx.fillStyle = withAlpha(cream, 0.92);
   let artistDraw = artist;
