@@ -49,8 +49,8 @@ export function App() {
   const [error, setError] = useState('');
   const [seed, setSeed] = useState('#5E7678');
   const [note, setNote] = useState('');
-  const [template, setTemplate] = useState<Template>('immersive');
-  const [ratio, setRatio] = useState<RatioId>('poster');
+  const [template, setTemplate] = useState<Template>('kokoro');
+  const [ratio, setRatio] = useState<RatioId>('wide');
   const [tone, setTone] = useState<Tone>('light');
   const [appMode, setAppMode] = useState<Tone>('light');
   const [blur, setBlur] = useState(0);
@@ -160,8 +160,7 @@ export function App() {
       setAppMode(palette.highKey ? 'light' : 'dark');
       setBlur(0);
       setDarkness(palette.highKey ? 0.28 : 0.62);
-      setGrain(palette.highKey ? 0.08 : 0.16);
-      setTemplate('immersive');
+      setGrain(0);
       setStatus('ready');
       document.title = `${track.name} · 日推`;
       const url = new URL(window.location.href);
@@ -401,6 +400,7 @@ export function App() {
 
           <section className="card">
             <h2>主题</h2>
+            <p className="support">1 playlist，2 心予報。</p>
             <div className="segmented" role="radiogroup" aria-label="海报主题">
               {THEMES.map((item) => (
                 <button
@@ -408,6 +408,7 @@ export function App() {
                   type="button"
                   role="radio"
                   aria-checked={template === item.id}
+                  title={item.name}
                   onClick={() => {
                     setTemplate(item.id);
                     setRatio(item.ratio);

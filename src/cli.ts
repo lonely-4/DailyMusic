@@ -37,8 +37,8 @@ const HELP = `日推海报
 
 选项
   -o, --out <文件>        输出 PNG，默认用歌名和艺人命名
-      --theme <主题>      ${THEMES.map((theme) => theme.label).join(' | ')}
-  -t, --template <主题>   同 --theme。歌单即《心予報》卡片，也可写 心予報
+      --theme <主题>      ${THEMES.map((theme) => `${theme.label} ${theme.name}`).join(' | ')}
+  -t, --template <主题>   同 --theme。默认 2
   -r, --ratio <画幅>      4:5 | 9:16 | 1:1 | 16:9
       --tone <light|dark> 浅底或深底，默认按封面明暗决定
   -n, --note <文字>       海报上的一句旁白
@@ -46,8 +46,8 @@ const HELP = `日推海报
   -h, --help
 
 示例
-  daily-music "https://163cn.tv/bi94lQEJ"
-  daily-music "https://163cn.tv/bjb2T4Lv" --theme 心予報
+  daily-music "https://163cn.tv/bjeLj9Zb" --theme 2
+  daily-music "https://163cn.tv/bjeLj9Zb" --theme 1
 `;
 
 function registerFonts() {
@@ -140,8 +140,8 @@ async function main() {
   if (!text) throw new Error('没有收到链接');
 
   const themeName = values.theme ?? values.template;
-  const theme = themeName ? resolveTheme(themeName) : resolveTheme('沉浸');
-  if (!theme) throw new Error(`未知主题「${themeName}」。可用：${THEMES.map((item) => item.label).join('、')}`);
+  const theme = themeName ? resolveTheme(themeName) : resolveTheme('2');
+  if (!theme) throw new Error(`未知主题「${themeName}」。可用：${THEMES.map((item) => `${item.label} ${item.name}`).join('、')}`);
   const template = theme.id;
   const ratio = values.ratio ? RATIO_IDS.get(values.ratio) : theme.ratio;
   if (!ratio) throw new Error(`未知画幅「${values.ratio}」。可用：4:5、9:16、1:1、16:9`);
@@ -173,7 +173,7 @@ async function main() {
     height: size.height,
     blur: 0,
     darkness: palette.highKey ? 0.28 : 0.62,
-    grain: template === 'player' ? 0 : palette.highKey ? 0.08 : 0.16,
+    grain: 0,
     title: track.name,
     subtitle: track.translation,
     artist: track.artists,

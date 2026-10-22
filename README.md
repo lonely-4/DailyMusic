@@ -10,8 +10,8 @@
 
 ```bash
 npm install
-npm run poster -- "https://163cn.tv/bi94lQEJ"
-npm run poster -- "https://163cn.tv/bjb2T4Lv" --theme 心予報 -o メタフィクション.png
+npm run poster -- "https://163cn.tv/bjeLj9Zb" --theme 2
+npm run poster -- "https://163cn.tv/bjeLj9Zb" --theme 1
 ```
 
 不带参数时会提示粘贴：
@@ -20,7 +20,7 @@ npm run poster -- "https://163cn.tv/bjb2T4Lv" --theme 心予報 -o メタフィ�
 npm run poster
 ```
 
-主题用 `--theme` 选择：`沉浸`、`歌单`、`刊头`、`胶片`、`独白`。`歌单` 就是《心予報》那张卡片，写成 `心予報` 也可以。`-t` 与 `--theme` 相同。画幅：`4:5`、`9:16`、`1:1`、`16:9`。歌单默认 16:9。
+主题用数字选择：`1` 是 playlist，`2` 是《心予報》。`--theme 1` 和 `--theme 2` 都可以，写成 `playlist` 或 `心予報` 也会对上。不写时用 2。`-t` 与 `--theme` 相同。两张都是 16:9 的歌单卡片。
 
 ## 网页
 
@@ -31,7 +31,7 @@ npm run dev
 
 - 搜索歌名，或粘贴歌曲 ID、`music.163.com` 链接、`163cn.tv` 短链。
 - 封面颜色会写成界面主题，并铺进海报。
-- 主题有沉浸、歌单、刊头、胶片、独白，画幅支持 4:5、9:16、1:1、16:9。歌单是《心予報》卡片。
+- 主题只有 `1` playlist 和 `2` 心予報，默认 16:9。
 - 旁白默认取歌词里和歌名最接近的一句，可以改掉。
 - 「保存海报」导出当前预览的 PNG。
 
